@@ -1,41 +1,38 @@
 # Autograd
 
-MiniTorch implements reverse-mode automatic differentiation for the current
-Tensor operations.
+Reverse-mode automatic differentiation for the operations defined on `Tensor`.
+Entry point: `Tensor.backward()` → `minitorch.autograd.backward`.
 
 ## Algorithm
 
-`Tensor.backward()` delegates to `minitorch.autograd.backward`:
-
 ```text
-forward computation records Tensor parents
+forward ops record Tensor.parents
         |
         v
 ComputationGraph.from_tensor(output)
         |
         v
-topological_sort(graph)
+topological_sort(graph)     # parents before children
         |
         v
-seed output gradient
+seed dL/doutput             # 1.0 if scalar, else caller must pass gradient
         |
         v
-walk topological order in reverse
+for node in reversed(order):
+    apply local derivative of node.operation
+    unbroadcast parent grads to parent shapes
+    accumulate in dict[tensor_id]
         |
         v
-apply local derivative rule
-        |
-        v
-accumulate parent gradients
+add local grads into Tensor.grad
 ```
 
-The topological order guarantees consumers are processed before their
-dependencies during the reverse pass.
+Consumers run before producers on the reverse walk, so each node's upstream
+gradient is complete before it is split to parents.
 
-## Gradient Accumulation
+## Gradient accumulation
 
-Each backward call uses a local dictionary keyed by tensor id. This means
-multiple paths to the same tensor accumulate correctly:
+During one call, contributions are summed in a dict keyed by tensor id:
 
 ```python
 from minitorch import Tensor
@@ -43,35 +40,43 @@ from minitorch import Tensor
 x = Tensor(3.0, requires_grad=True)
 y = x + x
 y.backward()
-
 print(x.grad)  # 2.0
 ```
 
-At the end of the pass, local gradients are added into `Tensor.grad`. Repeated
-calls to `backward()` therefore accumulate user-visible gradients once per call.
+After the walk, those values are **added** into `Tensor.grad`. A second
+`backward()` therefore doubles leaf grads unless you call `zero_grad()`.
 
-## Supported Local Rules
+Parents with `requires_grad=False` are skipped.
 
-Implemented backward rules:
+## Local rules
 
-- addition
-- subtraction
-- multiplication
-- division
-- negation
-- matrix multiplication
-- power
-- sum
-- mean
-- reshape
-- transpose
+Implemented in `_local_gradients`:
 
-Broadcasted forward operations reduce their gradients back to each parent shape.
+| Op | Parent gradients (times upstream) |
+| --- | --- |
+| add | `1`, `1` |
+| sub | `1`, `-1` |
+| mul | `right`, `left` |
+| div | `1/right`, `-left / right²` |
+| neg | `-1` |
+| matmul | `upstream @ right.T`, `left.T @ upstream` (with vector reshape) |
+| pow | `exp * base^(exp-1)`, `out * log(base)` if exponent needs grad |
+| sum | broadcast ones according to `axis` / `keepdims` |
+| mean | same as sum, divided by reduced count |
+| reshape | `upstream.reshape(parent.shape)` |
+| transpose | inverse permutation of axes |
 
-## Current Limitations
+Broadcasted forwards are reversed by `_unbroadcast` (sum extra or size-1 axes).
 
-- Backward on non-scalar tensors requires an explicit seed gradient.
-- The power rule for differentiating with respect to the exponent uses
-  `log(base)`, so it is mathematically valid only where that derivative is
-  defined.
-- Numerical gradient checking is planned next.
+## Return value
+
+`backward()` returns `BackwardResult`: the graph, topological order, and
+`BackwardStats` (`processed_nodes`, `gradient_accumulations`, nested
+topological-sort stats). The same object is stored on
+`output._last_backward_result`.
+
+## Limits
+
+- Non-scalar outputs require an explicit seed gradient of matching shape.
+- Differentiating power with respect to the exponent uses `log(base)`.
+- No higher-order gradients (`grad.backward()` is not a second graph).

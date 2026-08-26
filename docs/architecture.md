@@ -1,32 +1,71 @@
 # Architecture
 
-MiniTorch is currently implemented as a compact Python package while the core
-foundation is being built incrementally.
+MiniTorch is a compact package. The implemented core is Tensor + DAG + DSA +
+reverse-mode autodiff + finite-difference checks. Higher-level ML pieces are
+not present yet.
 
-## Implemented Modules
+## Package layout
 
-- `minitorch.tensor`: Tensor storage, tensor metadata, operation lineage, and
-  inspection helpers.
-- `minitorch.graph`: Reconstruction of a computation DAG from Tensor parent
-  links.
-- `minitorch.dsa.traversal`: Explicit-stack DFS with measured visits, edge
-  inspections, and stack operations.
-- `minitorch.dsa.topological_sort`: Kahn topological sorting with measured node
-  and edge processing.
+```text
+minitorch/
+  tensor.py                 Tensor storage, ops, inspect/lineage, backward()
+  graph.py                  ComputationGraph, GraphNode, GraphEdge
+  autograd.py               reverse-mode engine
+  gradcheck.py              analytical vs numerical gradients
+  dsa/
+    traversal.py            iterative DFS
+    topological_sort.py     Kahn topological sort
+  nn.py, losses.py,         empty placeholders (not implemented)
+  optim.py, datasets.py,
+  utils.py
+```
 
-## Direction Of Graph Edges
+Public exports (`minitorch/__init__.py`): `Tensor`, `ComputationGraph`, graph
+error/node/edge types, `backward` / `BackwardResult` / `BackwardStats`,
+`gradcheck` / check result types.
 
-Graph edges point from dependency to consumer:
+## Data flow
+
+```text
+user writes  x * 2 + 3
+      |
+      v
+Tensor ops record parents + operation names
+      |
+      v
+ComputationGraph.from_tensor(output)
+      |
+      v
+topological_sort  (dependencies before consumers)
+      |
+      v
+backward walks that order in reverse
+      |
+      v
+local derivative rules + accumulation into Tensor.grad
+      |
+      v
+optional gradcheck via central finite differences
+```
+
+## Graph edge direction
+
+Edges point from dependency to consumer:
 
 ```text
 x -> multiply -> add -> mean
 ```
 
-This order is useful because topological sorting must process dependencies
-before the tensors that consume them. Reverse-mode autodiff will use the same
-topological order in reverse.
+Topological sort needs that direction. Autograd uses `reversed(order)`.
 
-## Current Limitations
+## What is not in this codebase
 
-Autograd, neural network modules, losses, optimizers, diagnostics, and
-visualization are not implemented yet.
+Do not describe these as implemented:
+
+- neural network `Module` / Linear / activations
+- losses and optimizers
+- training loop
+- proof engine, gradient detective, graph explorer, graph optimizer
+- Model X-Ray, AI-MRI, DSA profiler, visualization
+
+Those names appear in the original project prompt. They are future work.

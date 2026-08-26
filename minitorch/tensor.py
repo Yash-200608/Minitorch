@@ -13,9 +13,8 @@ class Tensor:
     """
     Core numerical object used by MiniTorch.
 
-    A Tensor stores numerical data plus lightweight graph metadata. Milestone 1
-    does not compute gradients yet, but every operation records enough lineage
-    for the autograd engine and graph explorer to build on later.
+    A Tensor stores NumPy data plus the parent/operation lineage used to rebuild
+    a computation graph. `backward()` runs reverse-mode autodiff on that graph.
     """
 
     def __init__(

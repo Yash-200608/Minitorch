@@ -36,9 +36,8 @@ class ComputationGraph:
     """
     A real DAG reconstructed from Tensor parent links.
 
-    Edges point from dependency to consumer, which is the direction used by
-    topological sorting before reverse-mode autodiff traverses the order
-    backwards in a later milestone.
+    Edges point from dependency to consumer. Kahn topological sort uses that
+    direction; reverse-mode autodiff then walks the same order backwards.
     """
 
     def __init__(

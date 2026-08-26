@@ -1,57 +1,64 @@
-# DSA Foundation
+# DSA
 
-MiniTorch uses real data structures and graph algorithms to expose how tensor
-computations are connected.
+MiniTorch uses a real DAG and textbook graph algorithms. Counts come from
+instrumentation in the functions, not from hardcoded numbers.
 
-## Computation Graph
+## Computation graph
 
-`ComputationGraph.from_tensor(output)` walks the actual `Tensor.parents` links
-and builds:
+`ComputationGraph.from_tensor(output)` walks `Tensor.parents`.
 
-- `GraphNode` records containing tensor id, operation, shape, parent ids, child
-  ids, gradient requirement, and operation metadata.
-- `GraphEdge` records from dependency to consumer.
+- `GraphNode`: id, operation, parent/child ids, shape, `requires_grad`, metadata
+- `GraphEdge`: `parent_id -> child_id`
 
-Repeated dependencies are preserved. For example, `x + x` records two edges
-from `x` to the add result, which matters later for gradient accumulation.
+`x + x` keeps two edges. Gradient accumulation later depends on that.
+
+Helpers: `adjacency()`, `reverse_adjacency()`, `roots()`, `leaves()`,
+`parents()`, `children()`, `summary()`, `vertex_count`, `edge_count`.
+
+While building, a visiting/visited map raises `GraphCycleError` on a cycle.
 
 ## DFS
 
-`depth_first_search(graph)` uses an explicit stack.
+`depth_first_search(graph, start_id=None, direction="children"|"parents")`
 
-Tracked metrics:
+Iterative stack in `minitorch/dsa/traversal.py`.
 
-- visits
-- edge inspections
-- stack pushes
-- stack pops
-- maximum stack size
+| Metric | Meaning |
+| --- | --- |
+| visits | nodes appended to the order |
+| edge inspections | neighbors looked at |
+| stack pushes / pops | explicit stack traffic |
+| max stack size | high-water mark |
+| complexity | always reported as `O(V + E)` |
 
-Complexity: `O(V + E)`.
+`direction="parents"` uses `reverse_adjacency()` so you can start at the loss
+and walk toward inputs.
 
-## Topological Sort
+## Topological sort
 
-`topological_sort(graph)` uses Kahn's algorithm:
+`topological_sort(graph)` is Kahn's algorithm in
+`minitorch/dsa/topological_sort.py`.
 
 ```text
-compute indegree for every node
-enqueue nodes with indegree 0
-while queue is not empty:
-    pop a node
-    append it to the ordering
-    decrement indegree for each child
-    enqueue children whose indegree becomes 0
+indegree[v] = number of incoming edges
+queue <- nodes with indegree 0
+while queue:
+    v = popleft
+    append v to order
+    for each child u of v:
+        indegree[u] -= 1
+        if indegree[u] == 0: enqueue u
+if |order| != |V|: cycle
 ```
 
-The result places dependencies before consumers. If not every node is processed,
-the graph contains a cycle and `GraphCycleError` is raised.
+Result: dependencies before consumers.
 
-Tracked metrics:
+Why autograd needs it: the reverse pass must visit a node only after every
+consumer has already contributed its upstream gradient. Reversing Kahn order
+gives that schedule.
 
-- processed nodes
-- edge inspections
-- queue pushes
-- queue pops
-- maximum queue size
+Tracked metrics: processed nodes, edge inspections, queue pushes/pops, max
+queue size. Complexity `O(V + E)`.
 
-Complexity: `O(V + E)`.
+Tests in `tests/test_dsa.py` cover empty, single node, chain, branch/merge,
+diamond, and cycle.

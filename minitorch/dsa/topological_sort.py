@@ -27,7 +27,7 @@ def topological_sort(graph: ComputationGraph) -> TopologicalSortResult:
     Kahn topological sort over dependency-to-consumer edges.
 
     The resulting order puts dependencies before the tensors that consume them.
-    Reverse-mode autodiff will later process this order backwards.
+    Reverse-mode autodiff processes this order backwards.
     """
 
     if graph.vertex_count == 0:
