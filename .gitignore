@@ -44,3 +44,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.code-workspace
+
+# Local media / downloads (not part of the project)
+*.mkv
+*.mp4
+*.avi

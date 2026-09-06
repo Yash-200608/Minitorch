@@ -62,3 +62,39 @@ queue size. Complexity `O(V + E)`.
 
 Tests in `tests/test_dsa.py` cover empty, single node, chain, branch/merge,
 diamond, and cycle.
+
+## Top-K (`minitorch/dsa/topk.py`)
+
+`topk(values, k=10, largest=True)` uses a binary min-heap.
+
+- Complexity: `O(N log K)` vs `O(N log N)` full sort
+- Returns indices, values, and `HeapStats`
+- See [`phase_a.md`](phase_a.md)
+
+## Benchmarks (`minitorch/dsa/benchmark.py`)
+
+Timed utilities compare full sort vs Top-K, DFS, topological sort, and cache
+on/off. Each `BenchmarkResult` reports runtime, operation counts, complexity,
+and memory notes from real instrumentation.
+
+## Glass Box integration (Phase B)
+
+`GraphExplorer.dsa_profile()` and Model X-Ray reuse these counters for real
+`V`, `E`, DFS visits, and topological-sort statistics. Gradient Detective uses
+`topk` for magnitude ranking. See [`phase_b.md`](phase_b.md).
+
+## Training integration (Phase D)
+
+During training, the same structures support inspectable learning:
+
+| Role | Structure |
+| --- | --- |
+| Parameter lookup | `ParameterRegistry` HashMap |
+| Optimizer `m`, `v` state | dict keyed by `id(parameter)` |
+| Forward/backward graph | `ComputationGraph` DAG |
+| Backward schedule | reverse Kahn topological order |
+| Gradient ranking in diagnostics | `topk` binary heap |
+| `Trainer.profile_step` | graph size + DFS + topo counters |
+
+`Trainer.fit()` disables the computation cache by default because parameters
+mutate each step. See [`phase_d.md`](phase_d.md).

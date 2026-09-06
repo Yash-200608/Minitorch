@@ -5,9 +5,9 @@ from typing import Any
 
 import numpy as np
 
-from .dsa.topological_sort import TopologicalSortStats, topological_sort
-from .graph import ComputationGraph
-from .tensor import Tensor
+from minitorch.dsa.topological_sort import TopologicalSortStats, topological_sort
+from minitorch.graph import ComputationGraph
+from minitorch.tensor import Tensor
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,7 @@ class BackwardResult:
     graph: ComputationGraph
     topological_order: list[int]
     stats: BackwardStats
+    seed_gradient: np.ndarray
 
 
 def backward(output: Tensor, gradient: Any | None = None) -> BackwardResult:
@@ -95,6 +96,7 @@ def backward(output: Tensor, gradient: Any | None = None) -> BackwardResult:
             gradient_accumulations=gradient_accumulations,
             topological_sort=topo.stats,
         ),
+        seed_gradient=seed.copy(),
     )
     output._last_backward_result = result
     return result
@@ -177,6 +179,36 @@ def _local_gradients(tensor: Tensor, upstream: np.ndarray) -> list[tuple[Tensor,
             return [(parent, np.transpose(upstream))]
         inverse_axes = np.argsort(axes)
         return [(parent, np.transpose(upstream, axes=inverse_axes))]
+
+    if operation == "exp":
+        parent = parents[0]
+        return [(parent, upstream * tensor.data)]
+
+    if operation == "log":
+        parent = parents[0]
+        return [(parent, upstream / parent.data)]
+
+    if operation == "relu":
+        parent = parents[0]
+        mask = (parent.data > 0).astype(np.float64)
+        return [(parent, upstream * mask)]
+
+    if operation == "sigmoid":
+        parent = parents[0]
+        output = tensor.data
+        return [(parent, upstream * output * (1.0 - output))]
+
+    if operation == "tanh":
+        parent = parents[0]
+        output = tensor.data
+        return [(parent, upstream * (1.0 - output**2))]
+
+    if operation == "fake_quantize":
+        parent = parents[0]
+        ste_mode = tensor.metadata.get("ste_mode", "identity")
+        if ste_mode == "identity":
+            return [(parent, upstream)]
+        raise NotImplementedError(f"No STE backward rule for fake_quantize mode {ste_mode!r}.")
 
     raise NotImplementedError(f"No backward rule has been implemented for operation {operation!r}.")
 
