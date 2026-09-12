@@ -1,0 +1,37 @@
+name: Bug report
+description: Something in MiniTorch behaves incorrectly.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please include a minimal reproduction. Do not paste exploit PoCs
+        for artifact parsers; see SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Observed behavior versus expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Smallest script or pytest that shows the issue.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: MiniTorch / Python
+      placeholder: "0.1.0 / Python 3.12 / NumPy 1.26"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra context
+      description: OS, related phase docs, or failing test name.

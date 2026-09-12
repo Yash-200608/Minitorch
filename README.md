@@ -1,233 +1,231 @@
-# MiniTorch — Glass Box AI
+<div align="center">
 
-MiniTorch is an educational autodiff library where tensors, graphs, gradients,
-and DSA algorithms stay inspectable.
+```text
+ __  __   ___   _   _   ___   _____    ___    ____     ____   _   _
+|  \/  | |_ _| | \ | | |_ _| |_   _|  / _ \  |  _ \   / ___| | | | |
+| |\/| |  | |  |  \| |  | |    | |   | | | | | |_) | | |     | |_| |
+| |  | |  | |  | |\  |  | |    | |   | |_| | |  _ <  | |___  |  _  |
+|_|  |_| |___| |_| \_| |___|   |_|    \___/  |_| \_\  \____| |_| |_|
 
-## Implementation status
+                    G L A S S   B O X   A I
+```
 
-**Core (Milestones 1–6)**
+# MiniTorch
 
-- Tensor, DAG, DFS, topological sort, autograd, `gradcheck`
+**Build it. Measure it. Explain it. Compare it. Preserve the evidence.**
 
-**Phase A — DSA engine**
+An educational autodiff framework where the computational graph, the DSA, the gradients,
+and the compression tradeoffs stay inspectable.
 
-- Heap Top-K, parameter registry, computation cache, benchmarks
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![NumPy](https://img.shields.io/badge/numpy-1.26%2B-013243?style=for-the-badge&logo=numpy&logoColor=white)](https://numpy.org/)
+[![Tests](https://img.shields.io/badge/tests-425%20passing-2ea44f?style=for-the-badge)](tests/)
+[![License](https://img.shields.io/badge/license-MIT-0B6E4F?style=for-the-badge)](LICENSE)
+[![Phases](https://img.shields.io/badge/core-Phases%20A--S-6f42c1?style=for-the-badge)](docs/final_report.md)
 
-**Phase B — Glass Box Intelligence**
+[Quickstart](#quickstart) · [Architecture](ARCHITECTURE.md) · [Final report](docs/final_report.md) · [Contributing](CONTRIBUTING.md)
 
-- Autograd Proof Engine (`loss.explain(x)`)
-- Graph Explorer (`loss.explore()`)
-- Gradient Detective (`model.gradient_report()`)
-- Model X-Ray (`model.xray()`)
+</div>
 
-**Phase C — Graph Optimizer**
+---
 
-- Safe DAG simplification with forward + gradient verification
-- `optimize(loss)` → `OptimizationResult`
+MiniTorch is **not** a PyTorch replacement. It is a laboratory:
 
-**Phase D — Training Engine**
+```text
+same model  +  same data  +  same seed  +  one technique change
+=  a comparison you can defend
+```
 
-- Layers, losses, `SGD`, `Adam`, `Trainer`, `DataLoader`
+---
 
-**Phase E — QuantizedTensor**
+## How the system fits together
 
-- Uniform scalar quantization (`quantize`, `dequantize`, `quantization_report`)
+```mermaid
+flowchart TB
+    Tensor[Tensor] --> Autograd[Autograd DAG]
+    Autograd --> DFS[DFS]
+    Autograd --> Topo[Kahn topo]
+    Autograd --> Training[Training]
+    Training --> GlassBox[Glass Box]
+    GlassBox --> Proof[Proof Engine]
+    GlassBox --> Detective[Gradient Detective]
+    GlassBox --> XRay[Model X-Ray]
+    GlassBox --> MRI[AI-MRI]
+    Training --> Quant[Quantization]
+    Quant --> Compress[Compression]
+    Compress --> Mixed[Mixed Precision]
+    Training --> QAT[QAT opt-in]
+    Quant --> Perf[Profiling / Parallel / Vectorized]
+    Compress --> Persist[Persistence]
+    Persist --> Lab[Experiment Lab]
+    Lab --> MRI
+```
 
-**Phase F — Learned Codebooks**
+---
 
-- `Codebook.fit`, encode/decode, uniform vs codebook comparison
+## Feature matrix
 
-**Phase G — Bit Packing**
+| Layer | What you can inspect | Entry points |
+| --- | --- | --- |
+| **DSA** | DAG, DFS, Kahn topo, heap Top-K, HashMap registry | [`docs/dsa.md`](docs/dsa.md) |
+| **Autograd** | Reverse-mode AD, lineage, `gradcheck` | [`docs/autograd.md`](docs/autograd.md) |
+| **Glass Box** | Proof, Explorer, Detective, X-Ray, MRI | [`docs/explain.md`](docs/explain.md) |
+| **Training** | `Module`, SGD/Adam, `Trainer`, checkpoints | [`docs/phase_d.md`](docs/phase_d.md) |
+| **Quantization** | Uniform, codebook, packing, rotation | [`docs/phase_e.md`](docs/phase_e.md)–[`H`](docs/phase_h.md) |
+| **Compression** | Post-training + mixed precision | [`docs/phase_i.md`](docs/phase_i.md), [`Q`](docs/phase_q.md) |
+| **QAT** | Weight-only fake quant + STE (experimental) | [`docs/phase_o.md`](docs/phase_o.md) |
+| **Performance** | Profiler, parallel, vectorized kernels | [`docs/phase_j.md`](docs/phase_j.md)–[`L`](docs/phase_l.md) |
+| **Persistence** | Versioned `.mtc` artifacts + CRC32 | [`docs/phase_m.md`](docs/phase_m.md) |
+| **Experiment Lab** | Deterministic IDs, comparisons, JSON results | [`docs/phase_r.md`](docs/phase_r.md) |
 
-- `pack_codes` / `unpack_codes`, `quantize(..., packed=True)`
+---
 
-**Phase H — Rotation Experiments**
-
-- Deterministic rotation + `compare_quantization_rotation`
-
-**Phase I — Model Compression**
-
-- `compress_model`, `compare_model_compression`, post-training parameter experiments
-
-**Phase J — Performance Profiler**
-
-- `benchmark_timing`, `PerformanceProfile`, training/quantization/compression profiling
-- `examples/performance_demo.py`, [`docs/phase_j.md`](docs/phase_j.md)
-
-**Phase K — Parallel Execution**
-
-- Opt-in `ParallelConfig`, chunking, parallel pack/quantize/compress
-- `examples/parallel_demo.py`, [`docs/phase_k.md`](docs/phase_k.md)
-
-**Phase L — Vectorization / SIMD-Friendly Kernels**
-
-- Reference vs vectorized kernels (packing, codebook, uniform, Hadamard)
-- `examples/vectorization_demo.py`, [`docs/phase_l.md`](docs/phase_l.md)
-
-**Phase M — Persistence**
-
-- Versioned `.mt` / `.mtc` artifacts, `save_model` / `load_model`, compressed save/load
-- `examples/persistence_demo.py`, [`docs/phase_m.md`](docs/phase_m.md)
-
-**Phase N — Training Checkpoints**
-
-- Checkpoint artifacts (`artifact_type=checkpoint`): model + optimizer state + epoch/step + history
-- `trainer.save_checkpoint`, `Trainer.from_checkpoint`, resume-aware `fit(..., resume=True)`
-- `examples/checkpoint_resume_demo.py`, [`docs/phase_n.md`](docs/phase_n.md)
-
-**Phase O — Quantization-Aware Training**
-
-- Weight-only uniform fake quantization with identity STE (experimental, opt-in)
-- `x.fake_quantize(bits=4)`, `prepare_qat`, `Trainer(..., qat_config=QATConfig(bits=4))`
-- `examples/qat_demo.py`, [`docs/phase_o.md`](docs/phase_o.md)
-
-**Phase P — AI-MRI**
-
-- Unified Glass Box diagnostics: `model.mri(...)`, `inspect_model_mri`, `compare_mri`
-- Composes X-Ray, gradients, graph, profiler, compression, QAT without duplicate algorithms
-- `examples/ai_mri_demo.py`, [`docs/phase_p.md`](docs/phase_p.md)
-
-**Phase Q — Mixed Precision**
-
-- Per-parameter post-training bit widths: `MixedPrecisionConfig`, `compress_model_mixed_precision`
-- Sensitivity reports, global vs mixed comparison, optional greedy heuristic
-- `examples/mixed_precision_demo.py`, [`docs/phase_q.md`](docs/phase_q.md)
-
-**Phase R — Experiment Lab**
-
-- Reproducible experiment framework composing training, compression, QAT, profiling, checkpoints
-- `Experiment(config).run()`, deterministic `experiment_id`, JSON result persistence
-- `run_quantization_matrix`, `compare_experiments`, AI-MRI `model.mri(experiment=result)`
-- `examples/experiment_lab_demo.py`, [`docs/phase_r.md`](docs/phase_r.md)
-
-**Phase S — Final Validation**
-
-- Canonical benchmark suite (`python -m benchmarks`), test matrix by subsystem
-- Measured findings + limitations in [`docs/final_report.md`](docs/final_report.md)
-- `examples/final_evaluation.py`, [`docs/phase_s.md`](docs/phase_s.md)
-- Core MiniTorch complete through Phase S; further work is optional research tracks
-
-**Optional research tracks**
-
-- See [`docs/future.md`](docs/future.md) and [`docs/final_report.md`](docs/final_report.md)
-
-## Installation
+## Quickstart
 
 ```bash
 python -m pip install -e ".[dev]"
+pytest tests/ -q
 ```
 
-## Glass Box example
-
 ```python
-from minitorch import Linear, Module, Tensor
+from minitorch import Linear, MSELoss, SGD, Sequential, ReLU, Tensor, Trainer
 
-class Model(Module):
-    def __init__(self):
-        super().__init__()
-        self.layer = Linear(2, 1)
+model = Sequential(Linear(1, 8), ReLU(), Linear(8, 1))
+x = Tensor([[0.2], [0.5], [0.8]])
+y = Tensor([[2.6], [3.5], [4.4]])
 
-    def forward(self, x):
-        return self.layer(x)
-
-x = Tensor([[1.0, 2.0]], requires_grad=True)
-model = Model()
-loss = model(x).sum()
-
-loss.backward()
-print(loss.explain(x))
-print(model.gradient_report())
-print(model.xray(output=loss))
-```
-
-See [`examples/glass_box_demo.py`](examples/glass_box_demo.py).
-
-## Training example
-
-```python
-from minitorch import Linear, MSELoss, SGD, Tensor, Trainer
-
-model = Linear(1, 1)
 trainer = Trainer(model, SGD(model.parameters(), lr=0.1), MSELoss().forward)
-history = trainer.fit(Tensor(x_data), Tensor(y_data), epochs=200)
+trainer.fit(x, y, epochs=40)
+
+loss = MSELoss().forward(model(x), y)
+loss.backward()
+
+print(loss.explain(model.parameter("0.weight")))
+print(model.gradient_report())
+print(model.mri(output=loss))
 ```
 
-See [`examples/train_demo.py`](examples/train_demo.py).
+More walkthroughs: [`examples/glass_box_demo.py`](examples/glass_box_demo.py) · [`examples/train_demo.py`](examples/train_demo.py) · [`examples/final_evaluation.py`](examples/final_evaluation.py)
 
-## Quantization example
+---
 
-```python
-from minitorch import Tensor
+<details>
+<summary><strong>How it works</strong></summary>
 
-x = Tensor(data)
-report = x.quantization_report(bits=4)
-print(report.format())
+<br/>
+
+Forward ops parent-link into a DAG. Backward uses Kahn topological order.
+Proof replay uses the same local rules. MRI composes existing reports; it does
+not invent a second compression algorithm.
+
+```text
+forward  ->  Tensor.parents  ->  ComputationGraph
+         ->  backward        ->  Tensor.grad
+         ->  explain / explore / gradient_report / xray / mri
+         ->  Experiment Lab  ->  measure, compare, persist
 ```
 
-See [`examples/quantization_demo.py`](examples/quantization_demo.py).
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`docs/architecture.md`](docs/architecture.md).
 
-## Codebook example
+</details>
 
-```python
-uniform = x.quantize(bits=4)
-codebook = x.quantize(bits=4, method="codebook")
-print(uniform.report().error.rmse, codebook.report().error.rmse)
-```
+<details>
+<summary><strong>What we measured</strong> (Phase S, scoped to one workload)</summary>
 
-See [`examples/codebook_demo.py`](examples/codebook_demo.py).
+<br/>
 
-## Bit packing example
+Canonical setup: `Sequential(Linear(1,8), ReLU, Linear(8,1))`, `y = 3x + 2`, seed 42.
+Full numbers live in [`docs/final_report.md`](docs/final_report.md).
 
-```python
-q = x.quantize(bits=4, packed=True)
-print(q.report().memory.actual_packed_bytes)
-```
+| Question | Observed in that benchmark |
+| --- | --- |
+| Codebook vs uniform 4-bit | Lower output RMSE on the tiny model |
+| Codebook storage | Overhead can **expand** bytes on small models |
+| Bit packing | Same reconstruction; smaller physical storage |
+| Rotation | Unchanged on the measured `0.weight` cases |
+| Mixed precision | Better error than global 4-bit in that run |
+| QAT | Reduced quantization damage in that run |
+| Graph optimizer | No node removal on Linear-only graph; slower backward |
+| Parallel compress | Overhead dominated on the tiny workload |
+| Vectorized packing | Faster than the reference kernel at n=64 and n=256 |
 
-See [`examples/bitpacking_demo.py`](examples/bitpacking_demo.py).
-
-## Rotation experiment
-
-```python
-from minitorch import compare_quantization_rotation, Tensor
-
-experiment = compare_quantization_rotation(tensor.data, bits=4, method="codebook")
-print(experiment.format())
-```
-
-See [`examples/rotation_quantization_demo.py`](examples/rotation_quantization_demo.py).
-
-## Model compression example
-
-```python
-from minitorch import CompressionConfig, compare_model_compression
-
-report = compare_model_compression(
-    model, inputs, targets,
-    config=CompressionConfig(bits=4, method="codebook", packed=True),
-)
-print(report.format())
-```
-
-See [`examples/model_compression_demo.py`](examples/model_compression_demo.py).
-
-## Testing
+These are **not** universal claims. Re-run:
 
 ```bash
-pytest
+python -m benchmarks --fast
 ```
 
-**240 tests** (228 Phase A–H baseline + Phase I compression tests).
+</details>
 
-## Documentation
+<details>
+<summary><strong>Examples</strong></summary>
 
-- [`docs/phase_i.md`](docs/phase_i.md) — model compression
-- [`docs/phase_h.md`](docs/phase_h.md) — rotation experiments
-- [`docs/phase_g.md`](docs/phase_g.md) — bit packing
-- [`docs/phase_f.md`](docs/phase_f.md) — learned codebooks
-- [`docs/phase_e.md`](docs/phase_e.md) — QuantizedTensor
-- [`docs/phase_d.md`](docs/phase_d.md) — training engine
-- [`docs/phase_c.md`](docs/phase_c.md) — graph optimizer + verification
-- [`docs/phase_a.md`](docs/phase_a.md) — Top-K, registry, cache
-- [`docs/explain.md`](docs/explain.md) — core code walkthrough
+<br/>
+
+| Topic | Script |
+| --- | --- |
+| Glass Box | [`examples/glass_box_demo.py`](examples/glass_box_demo.py) |
+| Training | [`examples/train_demo.py`](examples/train_demo.py) |
+| Quantization | [`examples/quantization_demo.py`](examples/quantization_demo.py) |
+| Codebooks | [`examples/codebook_demo.py`](examples/codebook_demo.py) |
+| Bit packing | [`examples/bitpacking_demo.py`](examples/bitpacking_demo.py) |
+| Rotation | [`examples/rotation_quantization_demo.py`](examples/rotation_quantization_demo.py) |
+| Compression | [`examples/model_compression_demo.py`](examples/model_compression_demo.py) |
+| QAT | [`examples/qat_demo.py`](examples/qat_demo.py) |
+| Mixed precision | [`examples/mixed_precision_demo.py`](examples/mixed_precision_demo.py) |
+| Experiment Lab | [`examples/experiment_lab_demo.py`](examples/experiment_lab_demo.py) |
+| Final evaluation | [`examples/final_evaluation.py`](examples/final_evaluation.py) |
+
+</details>
+
+<details>
+<summary><strong>Phase map A-S</strong></summary>
+
+<br/>
+
+Core through Phase S is **complete**. Later ideas are optional tracks, not a mandatory Phase T.
+
+| Phase | Focus | Doc |
+| --- | --- | --- |
+| A | DSA engine | [`docs/phase_a.md`](docs/phase_a.md) |
+| B | Glass Box intelligence | [`docs/phase_b.md`](docs/phase_b.md) |
+| C | Graph optimizer | [`docs/phase_c.md`](docs/phase_c.md) |
+| D | Training | [`docs/phase_d.md`](docs/phase_d.md) |
+| E–H | Quantize, codebook, pack, rotate | [`docs/phase_e.md`](docs/phase_e.md) |
+| I | Model compression | [`docs/phase_i.md`](docs/phase_i.md) |
+| J–L | Profile, parallel, vectorize | [`docs/phase_j.md`](docs/phase_j.md) |
+| M–N | Persistence, checkpoints | [`docs/phase_m.md`](docs/phase_m.md) |
+| O–Q | QAT, MRI, mixed precision | [`docs/phase_o.md`](docs/phase_o.md) |
+| R–S | Experiment Lab, validation | [`docs/phase_r.md`](docs/phase_r.md), [`docs/phase_s.md`](docs/phase_s.md) |
+
+</details>
+
+---
+
+## Status
+
+| | |
+| --- | --- |
+| **Implemented** | Autograd, training, Glass Box, quantization, compression, mixed precision, Experiment Lab |
+| **Experimental / opt-in** | Weight-only QAT |
+| **Not implemented** | GPU, distributed training, mixed-precision QAT, activation quantization, cloud tracking |
+
+MiniTorch does **not** claim production readiness, PyTorch-beating speed, or globally optimal compression.
+
+---
+
+## Docs
+
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — system overview
 - [`docs/architecture.md`](docs/architecture.md) — package layout
-- [`docs/future.md`](docs/future.md) — planned work (not built)
+- [`docs/final_report.md`](docs/final_report.md) — measured findings
+- [`docs/future.md`](docs/future.md) — optional research tracks
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`SECURITY.md`](SECURITY.md) · [`CHANGELOG.md`](CHANGELOG.md)
+
+---
+
+<div align="center">
+
+**425 tests · NumPy backend · local educational system**
+
+</div>
