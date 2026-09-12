@@ -100,9 +100,16 @@ and DSA algorithms stay inspectable.
 - `run_quantization_matrix`, `compare_experiments`, AI-MRI `model.mri(experiment=result)`
 - `examples/experiment_lab_demo.py`, [`docs/phase_r.md`](docs/phase_r.md)
 
-**Future tracks**
+**Phase S — Final Validation**
 
-- See [`docs/future.md`](docs/future.md) and [`docs/phase_p.md`](docs/phase_p.md)
+- Canonical benchmark suite (`python -m benchmarks`), test matrix by subsystem
+- Measured findings + limitations in [`docs/final_report.md`](docs/final_report.md)
+- `examples/final_evaluation.py`, [`docs/phase_s.md`](docs/phase_s.md)
+- Core MiniTorch complete through Phase S; further work is optional research tracks
+
+**Optional research tracks**
+
+- See [`docs/future.md`](docs/future.md) and [`docs/final_report.md`](docs/final_report.md)
 
 ## Installation
 

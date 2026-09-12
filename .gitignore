@@ -49,3 +49,8 @@ Thumbs.db
 *.mkv
 *.mp4
 *.avi
+
+# Benchmark machine-specific outputs (re-run to regenerate)
+benchmarks/results/
+checkpoint_resume_demo.mtc
+results/

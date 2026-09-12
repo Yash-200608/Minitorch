@@ -1,7 +1,7 @@
 # Architecture
 
-MiniTorch: Tensor core, DAG, DSA, autograd, Phase A utilities, and Phase B
-Glass Box inspection layers.
+MiniTorch: educational Glass Box autodiff stack through Phase S (Experiment Lab +
+final validation benchmarks). See [`final_report.md`](final_report.md).
 
 ## Package layout
 
@@ -39,6 +39,14 @@ minitorch/
     serialization.py        JSON save/load with schema validation
   qat.py                    weight-only QAT
   dsa/                      DFS, topo sort, topk, benchmarks
+```
+
+Top-level:
+
+```text
+benchmarks/                 Phase S canonical suite + test matrix
+examples/final_evaluation.py
+docs/final_report.md
 ```
 
 ## Glass Box data flow
@@ -88,6 +96,15 @@ Dataset → DataLoader → Trainer.train_step
   → optimizer.step (mutates Parameter.data, outside autograd)
 ```
 
-## Not implemented
+## Not implemented / experimental
 
-See [`future.md`](future.md) for optional research tracks (mixed-precision QAT, cloud tracking, SIMD).
+| Item | Status |
+| --- | --- |
+| Mixed-precision QAT | Not implemented |
+| Activation / codebook QAT | Not implemented |
+| GPU / distributed | Not implemented |
+| Cloud experiment tracking | Not implemented |
+| Weight-only QAT | Experimental, opt-in |
+| Graph optimizer on ReLU graphs | Not supported (replay gap) |
+
+See [`future.md`](future.md) and [`final_report.md`](final_report.md).

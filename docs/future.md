@@ -1,35 +1,41 @@
-# Future milestones (architecture only)
+# Future work — optional research tracks
 
-These items are **not implemented**. They document planned TurboVec-inspired
-direction without copying external implementations.
+Core MiniTorch is **complete through Phase S** (validation + Experiment Lab + final report).
 
-## Quantization
+The items below are **optional**. They are not a mandatory Phase T/U/V sequence.
 
-- `QuantizedTensor` storage separate from `float64` Tensor
-- Codebooks mapping discrete symbols to vectors
-- Bit packing for compact weight storage
+## Track A — Advanced QAT
 
-## Performance layer
+- Codebook QAT
+- Activation quantization
+- Mixed-precision QAT
 
-- SIMD-friendly layouts
-- Parallel graph traversal or batched backward (experimental)
-- Rotation / transform tricks for approximate search
+## Track B — Native performance
 
-## Integration rules when implemented
+- Specialized kernels beyond NumPy vectorization
+- Actual ISA-specific SIMD (only if measured and claimed carefully)
+
+## Track C — Storage
+
+- Memory mapping
+- Streaming artifacts
+- Large checkpoint handling
+
+## Track D — Glass Box UX
+
+- Interactive graph visualization
+- AI-MRI dashboard
+
+## Track E — Research algorithms
+
+- New quantization algorithms
+- Broader graph optimizer replay coverage (e.g. ReLU)
+- New compression strategies
+
+## Integration rules if pursued
 
 1. Correctness and inspectability before raw speed
 2. Opt-in experimental flags — never silent behavior changes
-3. Real benchmarks via `minitorch.dsa.benchmark` utilities
+3. Real benchmarks via Experiment Lab / `benchmarks/`
 4. Each feature must name the DSA it demonstrates
-
-## Current foundation (implemented)
-
-| Capability | DSA |
-| --- | --- |
-| Top-K | Binary heap |
-| Parameter registry | HashMap |
-| Computation cache | HashMap memoization |
-| Graph / backward | DAG + topological sort |
-| DFS | Explicit stack |
-
-Build on this layer before adding quantization or SIMD.
+5. Scope claims to measured workloads

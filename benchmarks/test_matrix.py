@@ -96,7 +96,7 @@ def build_test_summary(repo_root: Path | None = None) -> dict:
 def format_test_summary(summary: dict) -> str:
     lines = [
         "MiniTorch Test Summary",
-        "──────────────────────",
+        "----------------------",
         "",
         f"Total collected: {summary['total_collected']}",
         "",
