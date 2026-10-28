@@ -34,6 +34,7 @@ def save_model(model: Module, path: str | Path) -> None:
 
 def load_model(path: str | Path) -> Module:
     """Load a model from a MiniTorch artifact."""
+    path = Path(path)
     metadata, payload = _read_artifact(path, ARTIFACT_MODEL)
     return _deserialize_model(metadata, payload)
 
@@ -47,6 +48,7 @@ def save_compressed_model(compressed: CompressedModel, path: str | Path) -> None
 
 def load_compressed_model(path: str | Path) -> CompressedModel:
     """Load a compressed model from a MiniTorch artifact."""
+    path = Path(path)
     metadata, payload = _read_artifact(path, ARTIFACT_COMPRESSED_MODEL)
     return _deserialize_compressed_model(metadata, payload)
 

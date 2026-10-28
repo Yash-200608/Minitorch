@@ -70,6 +70,23 @@ def test_model_module_save_method(tmp_path: Path):
     assert loaded.weight.shape == (2, 3)
 
 
+def test_load_accepts_string_paths(tmp_path: Path):
+    model = Linear(2, 1)
+    model.weight.data = np.array([[0.5, -1.5]])
+    model_path = str(tmp_path / "model.mt")
+    save_model(model, model_path)
+    np.testing.assert_allclose(load_model(model_path).weight.data, model.weight.data)
+
+    compressed = compress_model(model, config=CompressionConfig(bits=4, method="uniform"))
+    compressed_path = str(tmp_path / "compressed.mtc")
+    save_compressed_model(compressed, compressed_path)
+    loaded = load_compressed_model(compressed_path)
+    np.testing.assert_allclose(
+        loaded.materialize(model).weight.data,
+        compressed.materialize(model).weight.data,
+    )
+
+
 def test_model_deterministic_bytes(tmp_path: Path):
     model = Linear(2, 2)
     path1 = tmp_path / "a.mt"
